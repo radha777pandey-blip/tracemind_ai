@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TraceMind AI - Codebase Understanding & Impact Analysis</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Vis.js for Dependency Graph -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <!-- Marked for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        code, pre, .font-mono { font-family: 'JetBrains Mono', monospace; }
+        #network-canvas {
+            width: 100%;
+            height: 600px;
+            background: #0f172a;
+            border-radius: 0.75rem;
+        }
+        .tab-btn.active {
+            border-bottom: 2px solid #6366f1;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        .badge-CRITICAL { background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
+        .badge-HIGH { background-color: #ffedd5; color: #9a3412; border: 1px solid #fb923c; }
+        .badge-MEDIUM { background-color: #fef9c3; color: #854d0e; border: 1px solid #facc15; }
+        .badge-LOW { background-color: #f0fdf4; color: #166534; border: 1px solid #4ade80; }
+        .badge-INFO { background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-white tracking-tight flex items-center gap-2">
+                        TraceMind <span class="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded font-mono">AI v1.0</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Codebase Understanding & Impact Analysis</p>
+                </div>
+            </div>
+
+            <!-- Repo Selector & Actions -->
+            <div class="flex items-center space-x-3">
+                <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg px-2 py-1">
+                    <span class="text-xs text-slate-400 mr-2">Repository:</span>
+                    <select id="repo-select" onchange="onRepoSelectChanged()" class="bg-transparent text-sm text-white font-medium focus:outline-none cursor-pointer">
+                        <option value="" disabled selected>Loading repositories...</option>
+                    </select>
+                </div>
+
+                <button onclick="openUploadModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    Upload ZIP / Ingest
+                </button>
+
+                <div id="api-status-badge" class="flex items-center text-xs text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2.5 py-1.5 rounded-lg">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
+                    API Online
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sub-bar: Active Repo Stats -->
+    <div id="repo-stats-banner" class="bg-slate-900 border-b border-slate-800 px-4 sm:px-6 lg:px-8 py-2.5">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between text-xs text-slate-300 gap-y-2">
+            <div class="flex items-center space-x-4">
+                <span class="font-medium text-white flex items-center gap-1.5" id="stat-repo-name">
+                    <span class="text-slate-500">Active:</span> None Selected
+                </span>
+                <span class="text-slate-500">|</span>
+                <span id="stat-repo-path" class="text-slate-400 font-mono text-[11px] truncate max-w-xs md:max-w-md">-</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="bg-slate-800 px-2.5 py-1 rounded border border-slate-700">Files: <b class="text-white" id="stat-files">0</b></span>
+                <span class="bg-slate-800 px-2.5 py-1 rounded border border-slate-700">Entities: <b class="text-white" id="stat-entities">0</b></span>
+                <span class="bg-slate-800 px-2.5 py-1 rounded border border-slate-700">Dependencies: <b class="text-white" id="stat-deps">0</b></span>
+                <span class="bg-slate-800 px-2.5 py-1 rounded border border-slate-700">Chunks: <b class="text-white" id="stat-chunks">0</b></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <div class="bg-slate-950 border-b border-slate-800 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto flex space-x-8">
+            <button onclick="switchTab('graph')" id="tab-graph-btn" class="tab-btn py-3 text-sm font-medium text-slate-400 hover:text-white transition flex items-center gap-2 border-b-2 border-transparent">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+                Dependency Graph
+            </button>
+            <button onclick="switchTab('impact')" id="tab-impact-btn" class="tab-btn py-3 text-sm font-medium text-slate-400 hover:text-white transition flex items-center gap-2 border-b-2 border-transparent">
+                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                Change-Impact Analysis
+            </button>
+            <button onclick="switchTab('traceability')" id="tab-traceability-btn" class="tab-btn py-3 text-sm font-medium text-slate-400 hover:text-white transition flex items-center gap-2 border-b-2 border-transparent">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Codebase Traceability
+            </button>
+            <button onclick="switchTab('qa')" id="tab-qa-btn" class="tab-btn py-3 text-sm font-medium text-slate-400 hover:text-white transition flex items-center gap-2 border-b-2 border-transparent">
+                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                Semantic Q&A (RAG)
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- No Repo Selected Warning Banner -->
+        <div id="no-repo-warning" class="hidden mb-6 p-4 rounded-xl bg-indigo-950/40 border border-indigo-800 text-indigo-200 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                    <h3 class="font-medium text-white">No codebase selected</h3>
+                    <p class="text-xs text-indigo-300">Select an existing repository from the top right or upload a ZIP / local directory to start analyzing.</p>
+                </div>
+            </div>
+            <button onclick="openUploadModal()" class="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">Ingest Now</button>
+        </div>
+
+        <!-- TAB 1: DEPENDENCY GRAPH -->
+        <section id="tab-graph" class="space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700/60">
+                <div>
+                    <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                        Interactive Dependency Graph
+                        <span id="graph-counts-badge" class="text-xs font-mono font-normal bg-slate-700 text-slate-300 px-2 py-0.5 rounded">0 nodes, 0 edges</span>
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Visual representation of files, functions, classes, imports, and method calls</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center space-x-2 text-xs">
+                        <label class="text-slate-400">Filter:</label>
+                        <select id="graph-filter" onchange="renderGraphWithFilter()" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200">
+                            <option value="all">All Nodes (Files & Entities)</option>
+                            <option value="files">Files Only</option>
+                            <option value="entities">Functions & Classes Only</option>
+                        </select>
+                    </div>
+                    <button onclick="loadGraphData()" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs text-white transition flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Refresh Graph
+                    </button>
+                </div>
+            </div>
+
+            <!-- Graph Legend -->
+            <div class="flex flex-wrap items-center gap-4 text-xs bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
+                <span class="text-slate-400 font-medium">Legend:</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-500 inline-block"></span> File</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Function</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> Class</span>
+                <span class="flex items-center gap-1.5"><span class="w-4 h-0.5 bg-sky-400 inline-block"></span> imports</span>
+                <span class="flex items-center gap-1.5"><span class="w-4 h-0.5 bg-rose-400 inline-block"></span> calls</span>
+                <span class="flex items-center gap-1.5"><span class="w-4 h-0.5 bg-slate-500 inline-block"></span> contains</span>
+                <span class="text-slate-500 ml-auto italic">Scroll to zoom, drag to pan, click nodes to inspect</span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <div class="lg:col-span-3">
+                    <div id="network-canvas" class="border border-slate-700/80 shadow-2xl relative">
+                        <div id="graph-loading" class="absolute inset-0 bg-slate-900/80 flex items-center justify-center text-slate-300 gap-2">
+                            <svg class="w-6 h-6 animate-spin text-indigo-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                            <span>Loading graph...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Node Inspector Sidebar -->
+                <div class="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3">Selected Component</h3>
+                        <div id="node-inspector-content" class="text-xs text-slate-400 space-y-3">
+                            <p class="italic text-slate-500">Click any node in the dependency graph to inspect details, outgoing calls, and incoming references.</p>
+                        </div>
+                    </div>
+                    <div id="node-inspector-actions" class="hidden pt-4 border-t border-slate-700">
+                        <button id="btn-run-impact-from-node" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-2 px-3 rounded-lg text-xs transition flex items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            Analyze Change Impact
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: CHANGE-IMPACT ANALYSIS -->
+        <section id="tab-impact" class="hidden space-y-6">
+            <div class="bg-slate-800/60 p-5 rounded-xl border border-slate-700/60">
+                <div class="mb-4">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></span>
+                        Change-Impact Analysis Engine
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">
+                        Select a file and function/class to simulate a code modification. TraceMind traverses the directed dependency graph to determine exactly which files, endpoints, and components could break, explaining <b class="text-amber-300">WHY</b> they are affected.
+                    </p>
+                </div>
+
+                <form onsubmit="runImpactAnalysis(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Target File</label>
+                        <select id="impact-file-select" onchange="onImpactFileChanged()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:ring-1 focus:ring-indigo-500">
+                            <option value="">Select a file...</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Target Entity (Optional)</label>
+                        <select id="impact-entity-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:ring-1 focus:ring-indigo-500">
+                            <option value="">Entire File</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Max Graph Traversal Depth: <span id="depth-val" class="font-bold text-indigo-400">3</span></label>
+                        <input type="range" id="impact-depth" min="1" max="5" value="3" oninput="document.getElementById('depth-val').innerText = this.value" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <div>
+                        <button type="submit" id="btn-submit-impact" class="w-full bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 text-white font-semibold py-2 px-4 rounded-lg text-xs transition shadow-lg shadow-amber-600/20 flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            Run Impact Analysis
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Impact Results Container -->
+            <div id="impact-results-container" class="hidden space-y-6">
+                <!-- Summary Card -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+                        <span class="text-xs text-slate-400">Assessed Risk Level</span>
+                        <div class="mt-2 flex items-center gap-2">
+                            <span id="impact-summary-risk" class="px-3 py-1 rounded-md font-bold text-sm badge-HIGH">HIGH</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+                        <span class="text-xs text-slate-400">Potentially Affected Files</span>
+                        <div class="mt-1 text-2xl font-bold text-white" id="impact-summary-files">0</div>
+                    </div>
+                    <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+                        <span class="text-xs text-slate-400">Potentially Affected Entities</span>
+                        <div class="mt-1 text-2xl font-bold text-white" id="impact-summary-entities">0</div>
+                    </div>
+                    <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+                        <span class="text-xs text-slate-400">Target Analyzed</span>
+                        <div class="mt-1 font-mono text-xs text-indigo-300 truncate" id="impact-summary-target">-</div>
+                    </div>
+                </div>
+
+                <!-- Impact Reasoning & Summary -->
+                <div class="bg-slate-800/70 p-4 rounded-xl border border-slate-700/80">
+                    <h3 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Architectural Impact Rationale</h3>
+                    <p id="impact-summary-text" class="text-xs text-slate-300 leading-relaxed font-sans"></p>
+                </div>
+
+                <!-- Affected Components Breakdown Table -->
+                <div class="bg-slate-800/60 rounded-xl border border-slate-700/60 overflow-hidden">
+                    <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-white">Affected Components & Causality Trails</h3>
+                        <span id="affected-table-count" class="text-xs font-mono text-slate-400">0 items</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-900/80 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-700">
+                                <tr>
+                                    <th class="py-3 px-4">Risk</th>
+                                    <th class="py-3 px-4">Component</th>
+                                    <th class="py-3 px-4">Kind</th>
+                                    <th class="py-3 px-4">File Location</th>
+                                    <th class="py-3 px-4">Depth</th>
+                                    <th class="py-3 px-4">Relationship Trail & Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody id="affected-items-tbody" class="divide-y divide-slate-700/50 text-slate-300">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: CODEBASE TRACEABILITY VIEW -->
+        <section id="tab-traceability" class="hidden space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700/60">
+                <div>
+                    <h2 class="text-base font-semibold text-white">Codebase Traceability & Architecture Inspector</h2>
+                    <p class="text-xs text-slate-400">Complete catalog of indexed files, parsed symbols, and extracted dependency edges</p>
+                </div>
+                <!-- Sub tabs for Traceability -->
+                <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-700 text-xs">
+                    <button onclick="switchTraceSubTab('files')" id="subtab-files-btn" class="px-3 py-1.5 rounded-md font-medium text-white bg-indigo-600 transition">Files</button>
+                    <button onclick="switchTraceSubTab('entities')" id="subtab-entities-btn" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">Entities (Functions & Classes)</button>
+                    <button onclick="switchTraceSubTab('dependencies')" id="subtab-deps-btn" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">Extracted Dependencies</button>
+                </div>
+            </div>
+
+            <!-- Traceability Search Input -->
+            <div class="relative">
+                <input type="text" id="trace-search-input" onkeyup="filterTraceTable()" placeholder="Search current table by name, path, or signature..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-xs text-white focus:ring-1 focus:ring-indigo-500">
+            </div>
+
+            <!-- SubTab Content: Files Table -->
+            <div id="subtab-files" class="bg-slate-800/60 rounded-xl border border-slate-700/60 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-900/80 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-700">
+                            <tr>
+                                <th class="py-3 px-4">Relative Path</th>
+                                <th class="py-3 px-4">Language</th>
+                                <th class="py-3 px-4">Lines</th>
+                                <th class="py-3 px-4">Size (Bytes)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trace-files-tbody" class="divide-y divide-slate-700/50 text-slate-300">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SubTab Content: Entities Table -->
+            <div id="subtab-entities" class="hidden bg-slate-800/60 rounded-xl border border-slate-700/60 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-900/80 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-700">
+                            <tr>
+                                <th class="py-3 px-4">Name</th>
+                                <th class="py-3 px-4">Kind</th>
+                                <th class="py-3 px-4">File Path</th>
+                                <th class="py-3 px-4">Lines</th>
+                                <th class="py-3 px-4">Signature</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trace-entities-tbody" class="divide-y divide-slate-700/50 text-slate-300">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SubTab Content: Dependencies Table -->
+            <div id="subtab-dependencies" class="hidden bg-slate-800/60 rounded-xl border border-slate-700/60 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-900/80 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-700">
+                            <tr>
+                                <th class="py-3 px-4">Source Component</th>
+                                <th class="py-3 px-4">Relation Type</th>
+                                <th class="py-3 px-4">Target Component</th>
+                                <th class="py-3 px-4">Line</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trace-deps-tbody" class="divide-y divide-slate-700/50 text-slate-300">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: SEMANTIC Q&A (RAG) -->
+        <section id="tab-qa" class="hidden space-y-6">
+            <div class="bg-slate-800/60 p-5 rounded-xl border border-slate-700/60">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                            AI Codebase Q&A & Semantic Code Search
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Ask architectural or implementation questions grounded strictly in the parsed repository</p>
+                    </div>
+                    <div id="qa-mode-indicator" class="text-xs px-2.5 py-1 rounded-full bg-slate-700 text-slate-300 border border-slate-600 font-mono">
+                        Engine: Auto (Gemini with Local Fallback)
+                    </div>
+                </div>
+
+                <form onsubmit="submitQAQuestion(event)" class="space-y-3">
+                    <div class="relative">
+                        <textarea id="qa-query-input" rows="3" placeholder="e.g. How does user signup and authentication work? Where is database connection initialized?" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-indigo-500"></textarea>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2 text-xs text-slate-400">
+                            <span>Top K Chunks:</span>
+                            <select id="qa-top-k" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200">
+                                <option value="3">3 Chunks</option>
+                                <option value="4" selected>4 Chunks</option>
+                                <option value="6">6 Chunks</option>
+                            </select>
+                        </div>
+                        <button type="submit" id="btn-submit-qa" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-4 py-2 rounded-lg transition flex items-center gap-2 shadow-md shadow-indigo-600/20">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            Ask Codebase
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Q&A Answer and Evidence Container -->
+            <div id="qa-results-container" class="hidden space-y-6">
+                <!-- Answer Card -->
+                <div class="bg-slate-800/80 p-5 rounded-xl border border-slate-700">
+                    <div class="flex items-center justify-between mb-3 border-b border-slate-700/80 pb-2">
+                        <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                            Answer
+                        </h3>
+                        <span id="qa-generation-badge" class="text-xs px-2 py-0.5 rounded font-mono bg-indigo-950 text-indigo-300 border border-indigo-800">
+                            Gemini 2.5 Flash
+                        </span>
+                    </div>
+                    <div id="qa-answer-markdown" class="text-xs sm:text-sm text-slate-200 leading-relaxed space-y-3 prose prose-invert max-w-none">
+                        <!-- Populated dynamically with parsed markdown -->
+                    </div>
+                </div>
+
+                <!-- Grounded Citations & Evidence -->
+                <div class="bg-slate-800/60 p-5 rounded-xl border border-slate-700/60">
+                    <h3 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-4">Grounded Source Citations & Code Snippets</h3>
+                    <div id="qa-citations-list" class="space-y-4">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Upload / Ingest Modal -->
+    <div id="upload-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+            <button onclick="closeUploadModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+
+            <h2 class="text-lg font-bold text-white mb-1">Ingest Codebase into TraceMind</h2>
+            <p class="text-xs text-slate-400 mb-4">Upload a project ZIP file or point to a local directory on the server.</p>
+
+            <!-- Mode Switcher -->
+            <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800 mb-4 text-xs">
+                <button onclick="switchIngestMode('zip')" id="ingest-tab-zip" class="w-1/2 py-2 rounded-md font-medium text-white bg-indigo-600 transition">Upload ZIP Archive</button>
+                <button onclick="switchIngestMode('dir')" id="ingest-tab-dir" class="w-1/2 py-2 rounded-md font-medium text-slate-400 hover:text-white transition">Local Folder Path</button>
+            </div>
+
+            <!-- Form: ZIP Upload -->
+            <form id="form-upload-zip" onsubmit="handleZipUpload(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Repository Name (Optional)</label>
+                    <input type="text" id="zip-repo-name" placeholder="e.g. Cognify or MyProject" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:ring-1 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Select ZIP Archive</label>
+                    <div id="zip-drop-area" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-6 text-center cursor-pointer bg-slate-950/40 transition">
+                        <input type="file" id="zip-file-input" accept=".zip" class="hidden" onchange="onZipFileChosen(this)">
+                        <svg class="w-8 h-8 mx-auto text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        <p id="zip-file-label" class="text-xs text-slate-300 font-medium">Click to select or drop .zip file here</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Safely ignores node_modules, .git, and virtual environments</p>
+                    </div>
+                </div>
+
+                <div id="upload-progress-box" class="hidden space-y-2">
+                    <div class="flex justify-between text-xs text-slate-300">
+                        <span id="upload-status-text">Uploading and extracting...</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                        <div id="upload-progress-bar" class="bg-indigo-600 h-2 rounded-full w-1/3 animate-pulse"></div>
+                    </div>
+                </div>
+
+                <div id="upload-error-box" class="hidden p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-xs text-rose-300"></div>
+
+                <button type="submit" id="btn-upload-submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg text-xs transition flex items-center justify-center gap-2">
+                    <span>Extract & Ingest Repository</span>
+                </button>
+            </form>
+
+            <!-- Form: Directory Path Ingest -->
+            <form id="form-ingest-dir" onsubmit="handleDirIngest(event)" class="hidden space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Local Directory Path</label>
+                    <input type="text" id="dir-path-input" placeholder="e.g. C:\Users\user\Projects\my-codebase" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:ring-1 focus:ring-indigo-500" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Repository Name (Optional)</label>
+                    <input type="text" id="dir-repo-name" placeholder="e.g. MyCodebase" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:ring-1 focus:ring-indigo-500">
+                </div>
+
+                <div id="dir-error-box" class="hidden p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-xs text-rose-300"></div>
+
+                <button type="submit" id="btn-dir-submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg text-xs transition flex items-center justify-center gap-2">
+                    <span>Scan & Ingest Directory</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        // Global State
+        let currentRepoId = null;
+        let repositories = [];
+        let rawGraphData = { nodes: [], edges: [] };
+        let visNetwork = null;
+        let currentTraceSubTab = 'files';
+        let repoFilesCache = [];
+        let repoEntitiesCache = [];
+        let repoDepsCache = [];
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            initDropArea();
+            loadRepositories();
+            switchTab('graph');
+        });
+
+        // Tab Switching
+        function switchTab(tabName) {
+            ['graph', 'impact', 'traceability', 'qa'].forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`tab-${t}-btn`);
+                if (el && btn) {
+                    if (t === tabName) {
+                        el.classList.remove('hidden');
+                        btn.classList.add('active', 'border-indigo-500', 'text-indigo-400');
+                        btn.classList.remove('text-slate-400', 'border-transparent');
+                    } else {
+                        el.classList.add('hidden');
+                        btn.classList.remove('active', 'border-indigo-500', 'text-indigo-400');
+                        btn.classList.add('text-slate-400', 'border-transparent');
+                    }
+                }
+            });
+
+            if (tabName === 'graph' && visNetwork) {
+                setTimeout(() => visNetwork.fit(), 100);
+            }
+        }
+
+        function switchTraceSubTab(subTab) {
+            currentTraceSubTab = subTab;
+            ['files', 'entities', 'dependencies'].forEach(st => {
+                const el = document.getElementById(`subtab-${st}`);
+                const btn = document.getElementById(`subtab-${st}-btn`);
+                if (st === subTab) {
+                    el.classList.remove('hidden');
+                    btn.classList.add('bg-indigo-600', 'text-white');
+                    btn.classList.remove('text-slate-400');
+                } else {
+                    el.classList.add('hidden');
+                    btn.classList.remove('bg-indigo-600', 'text-white');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+            filterTraceTable();
+        }
+
+        // Repositories API
+        async function loadRepositories() {
+            const selectEl = document.getElementById('repo-select');
+            try {
+                const res = await fetch('/api/repositories');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                repositories = await res.json();
+
+                selectEl.innerHTML = '';
+                if (repositories.length === 0) {
+                    selectEl.innerHTML = '<option value="" disabled selected>No repositories indexed yet</option>';
+                    document.getElementById('no-repo-warning').classList.remove('hidden');
+                    resetRepoStats();
+                    return;
+                }
+
+                document.getElementById('no-repo-warning').classList.add('hidden');
+                repositories.forEach(repo => {
+                    const opt = document.createElement('option');
+                    opt.value = repo.id;
+                    opt.textContent = `${repo.name} (${repo.file_count} files)`;
+                    selectEl.appendChild(opt);
+                });
+
+                // Default to first repo if none active or previously selected
+                if (!currentRepoId || !repositories.some(r => r.id === currentRepoId)) {
+                    currentRepoId = repositories[0].id;
+                }
+                selectEl.value = currentRepoId;
+                await onRepoSelected(currentRepoId);
+            } catch (err) {
+                console.error('Failed to load repositories:', err);
+                selectEl.innerHTML = '<option value="" disabled selected>Error loading repositories</option>';
+            }
+        }
+
+        async function onRepoSelectChanged() {
+            const selectEl = document.getElementById('repo-select');
+            currentRepoId = parseInt(selectEl.value, 10);
+            await onRepoSelected(currentRepoId);
+        }
+
+        async function onRepoSelected(repoId) {
+            currentRepoId = repoId;
+            const repo = repositories.find(r => r.id === repoId);
+            if (!repo) return;
+
+            // Update stats banner
+            document.getElementById('stat-repo-name').innerHTML = `<span class="text-slate-500">Active:</span> ${escapeHtml(repo.name)}`;
+            document.getElementById('stat-repo-path').textContent = repo.path;
+            document.getElementById('stat-files').textContent = repo.file_count;
+            document.getElementById('stat-entities').textContent = repo.entity_count;
+
+            // Load extra data in parallel
+            await Promise.all([
+                loadRepoStats(repoId),
+                loadGraphData(),
+                loadTraceabilityData(repoId),
+                populateImpactFileDropdown(repoId)
+            ]);
+        }
+
+        async function loadRepoStats(repoId) {
+            try {
+                const res = await fetch(`/api/repositories/${repoId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('stat-files').textContent = data.file_count;
+                    document.getElementById('stat-entities').textContent = data.entity_count;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function resetRepoStats() {
+            document.getElementById('stat-repo-name').innerHTML = '<span class="text-slate-500">Active:</span> None Selected';
+            document.getElementById('stat-repo-path').textContent = '-';
+            document.getElementById('stat-files').textContent = '0';
+            document.getElementById('stat-entities').textContent = '0';
+            document.getElementById('stat-deps').textContent = '0';
+            document.getElementById('stat-chunks').textContent = '0';
+        }
+
+        // TASK 5: Interactive Dependency Graph
+        async function loadGraphData() {
+            if (!currentRepoId) return;
+            const loading = document.getElementById('graph-loading');
+            loading.classList.remove('hidden');
+
+            try {
+                const res = await fetch(`/api/repositories/${currentRepoId}/graph`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                rawGraphData = await res.json();
+                document.getElementById('stat-deps').textContent = rawGraphData.edges.length;
+                document.getElementById('graph-counts-badge').textContent = `${rawGraphData.nodes.length} nodes, ${rawGraphData.edges.length} edges`;
+                renderGraphWithFilter();
+            } catch (err) {
+                console.error('Failed to load graph:', err);
+                document.getElementById('graph-counts-badge').textContent = 'Failed to load';
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        function renderGraphWithFilter() {
+            const filter = document.getElementById('graph-filter').value;
+            const container = document.getElementById('network-canvas');
+
+            if (!rawGraphData.nodes || rawGraphData.nodes.length === 0) {
+                container.innerHTML = '<div class="h-full flex items-center justify-center text-slate-500 text-sm">No graph nodes discovered for this repository.</div>';
+                return;
+            }
+
+            // Filter nodes
+            let filteredNodes = rawGraphData.nodes;
+            if (filter === 'files') {
+                filteredNodes = rawGraphData.nodes.filter(n => n.kind === 'file');
+            } else if (filter === 'entities') {
+                filteredNodes = rawGraphData.nodes.filter(n => n.kind !== 'file');
+            }
+            const allowedNodeIds = new Set(filteredNodes.map(n => n.id));
+
+            // Filter edges where both endpoints exist
+            const filteredEdges = rawGraphData.edges.filter(e => allowedNodeIds.has(e.from) && allowedNodeIds.has(e.to));
+
+            // Transform into Vis.js DataSet format
+            const visNodes = filteredNodes.map(n => {
+                let color = '#3b82f6'; // default file: blue
+                let shape = 'box';
+                let size = 18;
+
+                if (n.kind === 'function' || n.kind === 'method') {
+                    color = '#10b981'; // emerald
+                    shape = 'dot';
+                    size = 14;
+                } else if (n.kind === 'class') {
+                    color = '#f59e0b'; // amber
+                    shape = 'diamond';
+                    size = 18;
+                }
+
+                return {
+                    id: n.id,
+                    label: n.name.length > 25 ? n.name.slice(0, 22) + '...' : n.name,
+                    title: `<b>${escapeHtml(n.name)}</b><br>Kind: ${n.kind}<br>File: ${escapeHtml(n.file || '')}`,
+                    color: {
+                        background: color,
+                        border: '#ffffff',
+                        highlight: { background: '#818cf8', border: '#ffffff' }
+                    },
+                    font: { color: '#ffffff', face: 'JetBrains Mono', size: 11 },
+                    shape: shape,
+                    size: size,
+                    rawNode: n
+                };
+            });
+
+            const visEdges = filteredEdges.map((e, idx) => {
+                let edgeColor = '#64748b';
+                let dashes = false;
+                if (e.relation === 'calls') {
+                    edgeColor = '#f43f5e'; // rose
+                } else if (e.relation === 'imports') {
+                    edgeColor = '#38bdf8'; // sky
+                } else if (e.relation === 'contains') {
+                    edgeColor = '#475569';
+                    dashes = true;
+                }
+
+                return {
+                    id: `e_${idx}`,
+                    from: e.from,
+                    to: e.to,
+                    arrows: 'to',
+                    color: { color: edgeColor, highlight: '#ec4899' },
+                    label: e.relation !== 'contains' ? e.relation : '',
+                    font: { color: '#94a3b8', size: 9, align: 'middle' },
+                    dashes: dashes,
+                    smooth: { type: 'continuous' }
+                };
+            });
+
+            const data = {
+                nodes: new vis.DataSet(visNodes),
+                edges: new vis.DataSet(visEdges)
+            };
+
+            const options = {
+                physics: {
+                    solver: 'forceAtlas2Based',
+                    forceAtlas2Based: {
+                        gravitationalConstant: -35,
+                        centralGravity: 0.01,
+                        springLength: 90,
+                        springConstant: 0.08
+                    },
+                    maxVelocity: 50,
+                    minVelocity: 0.1,
+                    stabilization: { iterations: 100 }
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 100,
+                    zoomView: true,
+                    navigationButtons: true
+                }
+            };
+
+            visNetwork = new vis.Network(container, data, options);
+
+            // On Node Click -> Inspect
+            visNetwork.on('click', params => {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    const selectedNode = filteredNodes.find(n => n.id === nodeId);
+                    if (selectedNode) {
+                        displayNodeInspector(selectedNode, filteredEdges);
+                    }
+                }
+            });
+        }
+
+        function displayNodeInspector(node, edges) {
+            const container = document.getElementById('node-inspector-content');
+            const actions = document.getElementById('node-inspector-actions');
+            actions.classList.remove('hidden');
+
+            const outgoing = edges.filter(e => e.from === node.id);
+            const incoming = edges.filter(e => e.to === node.id);
+
+            container.innerHTML = `
+                <div class="space-y-2">
+                    <div class="font-mono text-sm font-bold text-white break-all">${escapeHtml(node.name)}</div>
+                    <div class="inline-block px-2 py-0.5 rounded text-[11px] font-mono bg-slate-700 text-slate-200 uppercase">${escapeHtml(node.kind)}</div>
+                    ${node.file ? `<div class="text-slate-400 font-mono text-[11px] truncate">File: <span class="text-slate-200">${escapeHtml(node.file)}</span></div>` : ''}
+                    ${node.line ? `<div class="text-slate-400 text-[11px]">Line: <span class="text-slate-200">${node.line}</span></div>` : ''}
+                </div>
+
+                <div class="pt-3 border-t border-slate-700 space-y-2">
+                    <div class="text-[11px] font-semibold text-slate-300">Outgoing Calls / Imports (${outgoing.length})</div>
+                    <div class="max-h-24 overflow-y-auto space-y-1 font-mono text-[11px] text-slate-400">
+                        ${outgoing.map(e => `<div>&rarr; <span class="text-sky-300">${escapeHtml(e.relation)}</span> ${escapeHtml(e.to)}</div>`).join('') || '<div class="italic text-slate-600">None</div>'}
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-700 space-y-2">
+                    <div class="text-[11px] font-semibold text-slate-300">Referenced By (${incoming.length})</div>
+                    <div class="max-h-24 overflow-y-auto space-y-1 font-mono text-[11px] text-slate-400">
+                        ${incoming.map(e => `<div>&larr; <span class="text-rose-300">${escapeHtml(e.relation)}</span> ${escapeHtml(e.from)}</div>`).join('') || '<div class="italic text-slate-600">None</div>'}
+                    </div>
+                </div>
+            `;
+
+            // Wire action button
+            const btn = document.getElementById('btn-run-impact-from-node');
+            btn.onclick = () => {
+                switchTab('impact');
+                // Auto-select file and entity
+                const fileSelect = document.getElementById('impact-file-select');
+                if (node.file) {
+                    fileSelect.value = node.file;
+                    onImpactFileChanged();
+                    setTimeout(() => {
+                        const entitySelect = document.getElementById('impact-entity-select');
+                        entitySelect.value = node.name;
+                    }, 50);
+                }
+            };
+        }
+
+        // TASK 6: Change-Impact Analysis Engine
+        async function populateImpactFileDropdown(repoId) {
+            const selectEl = document.getElementById('impact-file-select');
+            selectEl.innerHTML = '<option value="">Select a file...</option>';
+            try {
+                const res = await fetch(`/api/repositories/${repoId}/files`);
+                if (res.ok) {
+                    const files = await res.json();
+                    repoFilesCache = files;
+                    files.forEach(f => {
+                        const opt = document.createElement('option');
+                        opt.value = f.relative_path;
+                        opt.textContent = `${f.relative_path} (${f.language})`;
+                        selectEl.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                console.error('Error fetching files for impact dropdown:', err);
+            }
+        }
+
+        function onImpactFileChanged() {
+            const filePath = document.getElementById('impact-file-select').value;
+            const entitySelect = document.getElementById('impact-entity-select');
+            entitySelect.innerHTML = '<option value="">Entire File</option>';
+
+            if (!filePath || !repoEntitiesCache) return;
+            const entitiesInFile = repoEntitiesCache.filter(e => e.file_path === filePath);
+            entitiesInFile.forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e.name;
+                opt.textContent = `${e.name} (${e.entity_type}, lines ${e.start_line}-${e.end_line})`;
+                entitySelect.appendChild(opt);
+            });
+        }
+
+        async function runImpactAnalysis(e) {
+            e.preventDefault();
+            if (!currentRepoId) return alert('Please select a repository first.');
+
+            const filePath = document.getElementById('impact-file-select').value;
+            const entityName = document.getElementById('impact-entity-select').value;
+            const maxDepth = parseInt(document.getElementById('impact-depth').value, 10);
+
+            if (!filePath && !entityName) {
+                alert('Please select at least a target file to analyze.');
+                return;
+            }
+
+            const btn = document.getElementById('btn-submit-impact');
+            btn.disabled = true;
+            btn.innerHTML = `<span>Analyzing dependency graph...</span>`;
+
+            try {
+                const res = await fetch(`/api/repositories/${currentRepoId}/impact-analysis`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        file_path: filePath || null,
+                        entity_name: entityName || null,
+                        max_depth: maxDepth
+                    })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || `HTTP ${res.status}`);
+                }
+
+                const data = await res.json();
+                renderImpactResults(data);
+            } catch (err) {
+                alert('Impact Analysis Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Run Impact Analysis`;
+            }
+        }
+
+        function renderImpactResults(data) {
+            const container = document.getElementById('impact-results-container');
+            container.classList.remove('hidden');
+
+            // Summary metrics
+            const riskBadge = document.getElementById('impact-summary-risk');
+            riskBadge.className = `px-3 py-1 rounded-md font-bold text-sm badge-${data.highest_risk}`;
+            riskBadge.textContent = data.highest_risk;
+
+            document.getElementById('impact-summary-files').textContent = data.total_affected_files;
+            document.getElementById('impact-summary-entities').textContent = data.total_affected_entities;
+            document.getElementById('impact-summary-target').textContent = `${data.target.name || data.target.file_path || 'Target'} (${data.target.kind})`;
+            document.getElementById('impact-summary-text').textContent = data.summary_text;
+            document.getElementById('affected-table-count').textContent = `${data.affected_items.length} affected items`;
+
+            // Affected Items Table
+            const tbody = document.getElementById('affected-items-tbody');
+            tbody.innerHTML = '';
+
+            if (data.affected_items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-500 italic">No downstream components affected by this change.</td></tr>`;
+                return;
+            }
+
+            data.affected_items.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 transition';
+
+                const trailText = item.relation_trail && item.relation_trail.length > 0
+                    ? item.relation_trail.join(' &rarr; ')
+                    : 'Direct Dependency';
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-0.5 rounded text-[11px] font-bold badge-${item.impact_level}">${item.impact_level}</span>
+                    </td>
+                    <td class="py-3 px-4 font-mono font-medium text-white">${escapeHtml(item.name)}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">${item.kind}</span></td>
+                    <td class="py-3 px-4 font-mono text-slate-400">${escapeHtml(item.file_path)}${item.line_number ? `:${item.line_number}` : ''}</td>
+                    <td class="py-3 px-4 font-mono text-slate-300">Depth ${item.depth}</td>
+                    <td class="py-3 px-4 space-y-1">
+                        <div class="text-[11px] text-amber-300 font-mono">${trailText}</div>
+                        <div class="text-[11px] text-slate-400">${escapeHtml(item.reason)}</div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // TASK 7: Codebase Traceability Data Loading & Filtering
+        async function loadTraceabilityData(repoId) {
+            try {
+                const [fRes, eRes, dRes] = await Promise.all([
+                    fetch(`/api/repositories/${repoId}/files`),
+                    fetch(`/api/repositories/${repoId}/entities`),
+                    fetch(`/api/repositories/${repoId}/dependencies`)
+                ]);
+
+                if (fRes.ok) repoFilesCache = await fRes.json();
+                if (eRes.ok) repoEntitiesCache = await eRes.json();
+                if (dRes.ok) repoDepsCache = await dRes.json();
+
+                renderTraceabilityTables();
+            } catch (err) {
+                console.error('Failed to load traceability data:', err);
+            }
+        }
+
+        function renderTraceabilityTables() {
+            // 1. Files
+            const filesTbody = document.getElementById('trace-files-tbody');
+            filesTbody.innerHTML = '';
+            repoFilesCache.forEach(f => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 transition';
+                tr.innerHTML = `
+                    <td class="py-2.5 px-4 font-mono text-indigo-300">${escapeHtml(f.relative_path)}</td>
+                    <td class="py-2.5 px-4"><span class="px-2 py-0.5 rounded bg-slate-700 text-slate-200 font-mono text-[10px] uppercase">${f.language}</span></td>
+                    <td class="py-2.5 px-4 font-mono text-slate-400">${f.line_count}</td>
+                    <td class="py-2.5 px-4 font-mono text-slate-400">${f.size_bytes.toLocaleString()}</td>
+                `;
+                filesTbody.appendChild(tr);
+            });
+
+            // 2. Entities
+            const entitiesTbody = document.getElementById('trace-entities-tbody');
+            entitiesTbody.innerHTML = '';
+            repoEntitiesCache.forEach(e => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 transition';
+                tr.innerHTML = `
+                    <td class="py-2.5 px-4 font-mono font-semibold text-white">${escapeHtml(e.name)}</td>
+                    <td class="py-2.5 px-4"><span class="px-2 py-0.5 rounded bg-slate-700 text-slate-200 font-mono text-[10px] uppercase">${e.entity_type}</span></td>
+                    <td class="py-2.5 px-4 font-mono text-slate-400">${escapeHtml(e.file_path)}</td>
+                    <td class="py-2.5 px-4 font-mono text-slate-400">${e.start_line}-${e.end_line}</td>
+                    <td class="py-2.5 px-4 font-mono text-slate-300 truncate max-w-xs">${escapeHtml(e.signature || '-')}</td>
+                `;
+                entitiesTbody.appendChild(tr);
+            });
+
+            // 3. Dependencies
+            const depsTbody = document.getElementById('trace-deps-tbody');
+            depsTbody.innerHTML = '';
+            repoDepsCache.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 transition';
+                tr.innerHTML = `
+                    <td class="py-2.5 px-4 font-mono text-slate-200">${escapeHtml(d.source_name || d.source_type)}</td>
+                    <td class="py-2.5 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-950 text-indigo-300 border border-indigo-800">${d.relation_type}</span></td>
+                    <td class="py-2.5 px-4 font-mono text-white font-medium">${escapeHtml(d.target_name)}</td>
+                    <td class="py-2.5 px-4 font-mono text-slate-400">${d.line_number || '-'}</td>
+                `;
+                depsTbody.appendChild(tr);
+            });
+        }
+
+        function filterTraceTable() {
+            const query = (document.getElementById('trace-search-input').value || '').toLowerCase();
+            const activeTbodyId = currentTraceSubTab === 'files'
+                ? 'trace-files-tbody'
+                : currentTraceSubTab === 'entities'
+                    ? 'trace-entities-tbody'
+                    : 'trace-deps-tbody';
+
+            const tbody = document.getElementById(activeTbodyId);
+            const rows = tbody.getElementsByTagName('tr');
+            for (let i = 0; i < rows.length; i++) {
+                const text = rows[i].innerText.toLowerCase();
+                rows[i].style.display = text.includes(query) ? '' : 'none';
+            }
+        }
+
+        // TASK 4: Semantic Q&A (RAG)
+        async function submitQAQuestion(e) {
+            e.preventDefault();
+            if (!currentRepoId) return alert('Please select a repository first.');
+
+            const query = document.getElementById('qa-query-input').value.trim();
+            if (query.length < 2) return alert('Please enter a longer query.');
+
+            const topK = parseInt(document.getElementById('qa-top-k').value, 10);
+            const btn = document.getElementById('btn-submit-qa');
+            btn.disabled = true;
+            btn.innerHTML = `<span>Searching codebase...</span>`;
+
+            try {
+                const res = await fetch(`/api/repositories/${currentRepoId}/query`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query, top_k: topK })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || `HTTP ${res.status}`);
+                }
+
+                const data = await res.json();
+                renderQAResults(data);
+            } catch (err) {
+                alert('Q&A Search Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg> Ask Codebase`;
+            }
+        }
+
+        function renderQAResults(data) {
+            const container = document.getElementById('qa-results-container');
+            container.classList.remove('hidden');
+
+            // Render Markdown answer
+            const markdownEl = document.getElementById('qa-answer-markdown');
+            if (window.marked) {
+                markdownEl.innerHTML = marked.parse(data.answer);
+            } else {
+                markdownEl.textContent = data.answer;
+            }
+
+            // Mode indicator badge
+            const badge = document.getElementById('qa-generation-badge');
+            if (data.mode === 'gemini_generation' || data.mode === 'gemini') {
+                badge.textContent = 'Google Gemini 2.5 Flash';
+                badge.className = 'text-xs px-2 py-0.5 rounded font-mono bg-emerald-950 text-emerald-300 border border-emerald-700';
+            } else if (data.mode === 'no_results') {
+                badge.textContent = 'No Grounded Evidence Found';
+                badge.className = 'text-xs px-2 py-0.5 rounded font-mono bg-rose-950 text-rose-300 border border-rose-800';
+            } else {
+                badge.textContent = 'Local Grounded Synthesizer (Fallback)';
+                badge.className = 'text-xs px-2 py-0.5 rounded font-mono bg-amber-950 text-amber-300 border border-amber-800';
+            }
+
+            // Citations
+            const citationsList = document.getElementById('qa-citations-list');
+            citationsList.innerHTML = '';
+
+            if (!data.citations || data.citations.length === 0) {
+                citationsList.innerHTML = '<div class="text-xs text-slate-500 italic">No citations retrieved.</div>';
+                return;
+            }
+
+            data.citations.forEach((c, idx) => {
+                const card = document.createElement('div');
+                card.className = 'bg-slate-900 border border-slate-700 rounded-lg p-3 space-y-2';
+                card.innerHTML = `
+                    <div class="flex items-center justify-between text-xs">
+                        <div class="font-mono text-indigo-300 flex items-center gap-2">
+                            <span class="w-5 h-5 rounded bg-slate-800 flex items-center justify-center text-[10px] text-slate-400 font-bold">${idx + 1}</span>
+                            ${escapeHtml(c.file_path)}
+                            ${c.entity_name ? `<span class="text-slate-400 font-sans">&bull; in <b class="text-white">${escapeHtml(c.entity_name)}</b></span>` : ''}
+                        </div>
+                        <span class="font-mono text-slate-400 text-[11px]">Lines ${c.start_line}-${c.end_line}</span>
+                    </div>
+                    <pre class="bg-slate-950 p-2.5 rounded text-[11px] font-mono text-slate-300 overflow-x-auto border border-slate-800"><code>${escapeHtml(c.snippet)}</code></pre>
+                `;
+                citationsList.appendChild(card);
+            });
+        }
+
+        // TASK 2: ZIP Upload & Directory Ingestion Handling
+        function openUploadModal() {
+            document.getElementById('upload-modal').classList.remove('hidden');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('upload-modal').classList.add('hidden');
+            document.getElementById('upload-error-box').classList.add('hidden');
+            document.getElementById('dir-error-box').classList.add('hidden');
+            document.getElementById('upload-progress-box').classList.add('hidden');
+        }
+
+        function switchIngestMode(mode) {
+            const isZip = mode === 'zip';
+            document.getElementById('form-upload-zip').classList.toggle('hidden', !isZip);
+            document.getElementById('form-ingest-dir').classList.toggle('hidden', isZip);
+            document.getElementById('ingest-tab-zip').className = isZip
+                ? 'w-1/2 py-2 rounded-md font-medium text-white bg-indigo-600 transition'
+                : 'w-1/2 py-2 rounded-md font-medium text-slate-400 hover:text-white transition';
+            document.getElementById('ingest-tab-dir').className = !isZip
+                ? 'w-1/2 py-2 rounded-md font-medium text-white bg-indigo-600 transition'
+                : 'w-1/2 py-2 rounded-md font-medium text-slate-400 hover:text-white transition';
+        }
+
+        function initDropArea() {
+            const dropArea = document.getElementById('zip-drop-area');
+            const fileInput = document.getElementById('zip-file-input');
+
+            dropArea.addEventListener('click', () => fileInput.click());
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropArea.classList.add('border-indigo-500', 'bg-slate-900');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropArea.classList.remove('border-indigo-500', 'bg-slate-900');
+                });
+            });
+
+            dropArea.addEventListener('drop', e => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0 && files[0].name.endsWith('.zip')) {
+                    fileInput.files = files;
+                    onZipFileChosen(fileInput);
+                } else {
+                    alert('Please drop a valid .zip archive file.');
+                }
+            });
+        }
+
+        function onZipFileChosen(input) {
+            const label = document.getElementById('zip-file-label');
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+                label.innerHTML = `<span class="text-indigo-400 font-mono">${escapeHtml(file.name)}</span> (${sizeMb} MB)`;
+            }
+        }
+
+        async function handleZipUpload(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('zip-file-input');
+            if (!fileInput.files || !fileInput.files[0]) {
+                alert('Please select a .zip file to upload.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const repoName = document.getElementById('zip-repo-name').value.trim();
+
+            const formData = new FormData();
+            formData.append('file', file);
+            if (repoName) formData.append('name', repoName);
+
+            const progressBox = document.getElementById('upload-progress-box');
+            const statusText = document.getElementById('upload-status-text');
+            const errorBox = document.getElementById('upload-error-box');
+            const submitBtn = document.getElementById('btn-upload-submit');
+
+            progressBox.classList.remove('hidden');
+            errorBox.classList.add('hidden');
+            submitBtn.disabled = true;
+            statusText.textContent = `Extracting & analyzing ${file.name}...`;
+
+            try {
+                const res = await fetch('/api/repositories/upload-zip', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || `Upload failed with HTTP ${res.status}`);
+                }
+
+                const data = await res.json();
+                statusText.textContent = `Success! Indexed ${data.files_count} files, ${data.entities_count} entities.`;
+                currentRepoId = data.repo_id;
+
+                setTimeout(async () => {
+                    closeUploadModal();
+                    await loadRepositories();
+                }, 1000);
+            } catch (err) {
+                console.error(err);
+                progressBox.classList.add('hidden');
+                errorBox.classList.remove('hidden');
+                errorBox.textContent = err.message;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function handleDirIngest(e) {
+            e.preventDefault();
+            const path = document.getElementById('dir-path-input').value.trim();
+            const name = document.getElementById('dir-repo-name').value.trim();
+            const errorBox = document.getElementById('dir-error-box');
+            const submitBtn = document.getElementById('btn-dir-submit');
+
+            errorBox.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span>Scanning directory...</span>`;
+
+            try {
+                const res = await fetch('/api/repositories/ingest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: path, name: name || null })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || `Scan failed with HTTP ${res.status}`);
+                }
+
+                const data = await res.json();
+                currentRepoId = data.repo_id;
+                closeUploadModal();
+                await loadRepositories();
+            } catch (err) {
+                console.error(err);
+                errorBox.classList.remove('hidden');
+                errorBox.textContent = err.message;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<span>Scan & Ingest Directory</span>`;
+            }
+        }
+
+        // Utility: HTML Escape
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>

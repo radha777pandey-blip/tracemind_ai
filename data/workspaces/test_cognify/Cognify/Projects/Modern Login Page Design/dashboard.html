@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cognify Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="dashboard-style.css" />
+  </head>
+  <body>
+    <div class="dashboard-shell">
+      <header class="dashboard-header">
+        <div class="dashboard-branding">
+          <div class="brand-logo">
+            <i class="fas fa-brain"></i>
+            <span>Cognify</span>
+          </div>
+          <nav class="dashboard-nav">
+            <a href="/">Home</a>
+            <a href="#overview">Overview</a>
+            <a href="#tasks">Tasks</a>
+            <a href="#resources">Resources</a>
+            <a href="/auth" class="nav-action">Sign Out</a>
+          </nav>
+          <button class="nav-toggle" aria-label="Toggle navigation">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+
+        <section class="dashboard-hero">
+          <div>
+            <p class="eyebrow">Welcome back, Learner</p>
+            <h1>Track your growth with smart recommendations</h1>
+            <p class="hero-copy">
+              Your personalized learning dashboard surfaces your progress, upcoming
+              tasks, and AI-recommended next skills so you can stay focused and move
+              faster.
+            </p>
+          </div>
+          <div class="hero-cards">
+            <article class="hero-card">
+              <span>Recommended Path</span>
+              <strong id="dashboardRecommendedPath">Frontend Developer</strong>
+            </article>
+            <article class="hero-card">
+              <span>Next Skill</span>
+              <strong id="dashboardNextSkill">Advanced React Patterns</strong>
+            </article>
+            <article class="hero-card">
+              <span>Roadmap Progress</span>
+              <strong>68%</strong>
+            </article>
+            <article class="hero-card">
+              <span>Practice Streak</span>
+              <strong>12 Days</strong>
+            </article>
+          </div>
+          <div class="dashboard-recommendation-summary">
+            <p id="dashboardRecommendationSummary">Your AI recommendation will appear here after completing the quiz.</p>
+          </div>
+        </section>
+      </header>
+
+      <main class="dashboard-main">
+        <section id="overview" class="overview-cards">
+          <article class="overview-card">
+            <div class="card-title">
+              <h2>Overall Score</h2>
+              <span class="tag success">Excellent</span>
+            </div>
+            <div class="score">
+              <strong>84</strong>
+              <span>/100</span>
+            </div>
+            <p>Based on your latest skill quiz and practice performance.</p>
+          </article>
+
+          <article class="overview-card">
+            <div class="card-title">
+              <h2>Active Path</h2>
+              <span class="tag">Frontend</span>
+            </div>
+            <div class="progress-meter">
+              <div class="progress-fill" style="width: 68%"></div>
+            </div>
+            <p>Continue your journey through the Web Developer learning path.</p>
+          </article>
+
+          <article class="overview-card">
+            <div class="card-title">
+              <h2>Resources Completed</h2>
+              <span class="tag">26 / 40</span>
+            </div>
+            <div class="resource-stat">
+              <i class="fas fa-book-open"></i>
+              <strong>65%</strong>
+            </div>
+            <p>Finish the remaining resources to keep momentum high.</p>
+          </article>
+
+          <article class="overview-card">
+            <div class="card-title">
+              <h2>Quiz Readiness</h2>
+              <span class="tag warning">Prepare</span>
+            </div>
+            <div class="quiz-meter">
+              <div class="meter-bar"><span style="width: 54%"></span></div>
+              <small>Core concepts need review before the next assessment.</small>
+            </div>
+          </article>
+        </section>
+
+        <section class="dashboard-grid">
+          <article class="panel path-panel">
+            <div class="panel-header">
+              <div>
+                <h3>Current Learning Path</h3>
+                <p>Frontend Developer Roadmap</p>
+              </div>
+              <a href="#resources">View Path</a>
+            </div>
+
+            <div class="path-progress">
+              <div class="path-step completed">
+                <span>1</span>
+                <div>
+                  <h4>HTML & CSS Foundations</h4>
+                  <p>Completed</p>
+                </div>
+              </div>
+              <div class="path-step completed">
+                <span>2</span>
+                <div>
+                  <h4>Responsive Layouts</h4>
+                  <p>Completed</p>
+                </div>
+              </div>
+              <div class="path-step active">
+                <span>3</span>
+                <div>
+                  <h4>JavaScript Mastery</h4>
+                  <p>In Progress</p>
+                </div>
+              </div>
+              <div class="path-step upcoming">
+                <span>4</span>
+                <div>
+                  <h4>Advanced React Patterns</h4>
+                  <p>Next Up</p>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <aside class="sidebar">
+            <div class="panel quick-actions">
+              <div class="panel-header">
+                <h3>Quick Actions</h3>
+              </div>
+              <div class="action-grid">
+                <a href="/quiz" class="action-card">
+                  <i class="fas fa-pencil-alt"></i>
+                  <span>Start Quiz</span>
+                </a>
+                <a href="#resources" class="action-card">
+                  <i class="fas fa-lightbulb"></i>
+                  <span>AI Recommendations</span>
+                </a>
+                <a href="/auth" class="action-card">
+                  <i class="fas fa-user-circle"></i>
+                  <span>Manage Profile</span>
+                </a>
+                <a href="#" class="action-card">
+                  <i class="fas fa-chart-line"></i>
+                  <span>Review Progress</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="panel activity-panel">
+              <div class="panel-header">
+                <h3>Upcoming Tasks</h3>
+                <span>3 due</span>
+              </div>
+              <ul>
+                <li>
+                  <strong>Complete JavaScript quiz</strong>
+                  <span>Today</span>
+                </li>
+                <li>
+                  <strong>Review React hooks</strong>
+                  <span>Tomorrow</span>
+                </li>
+                <li>
+                  <strong>Submit coding challenge</strong>
+                  <span>2 days</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="panel resource-panel">
+              <div class="panel-header">
+                <h3>Recommended Resources</h3>
+              </div>
+              <div class="resource-item">
+                <div>
+                  <h4>React Performance Guide</h4>
+                  <small>Article • 12 min</small>
+                </div>
+                <span class="pill">NEW</span>
+              </div>
+              <div class="resource-item">
+                <div>
+                  <h4>CSS Grid Deep Dive</h4>
+                  <small>Video • 18 min</small>
+                </div>
+              </div>
+              <div class="resource-item">
+                <div>
+                  <h4>Build a Todo App</h4>
+                  <small>Project • 40 min</small>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <section id="tasks" class="recent-activity-panel">
+          <div class="panel-header">
+            <h3>Recent Activity</h3>
+            <a href="#">View full history</a>
+          </div>
+          <div class="activity-list">
+            <article class="activity-card">
+              <p class="activity-type">Quiz Completed</p>
+              <h4>JavaScript Basics</h4>
+              <span>Score: 84%</span>
+            </article>
+            <article class="activity-card">
+              <p class="activity-type">Resource Viewed</p>
+              <h4>CSS Layout Patterns</h4>
+              <span>10 min ago</span>
+            </article>
+            <article class="activity-card">
+              <p class="activity-type">Learning Path</p>
+              <h4>Advanced React Patterns</h4>
+              <span>02 Jul 2026</span>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="dashboard-script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cognify - Discover. Learn. Lead.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="landing-style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <div class="logo">
+                    <i class="fas fa-brain"></i>
+                    <span>Cognify</span>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                    <li><a href="#benefits">Benefits</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+                <div class="nav-buttons">
+                    <a href="index.html" class="btn btn-secondary">Sign In</a>
+                    <a href="index.html?mode=signup" class="btn btn-primary">Get Started</a>
+                </div>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                Discover Your Learning <span class="highlight">Path</span>
+            </h1>
+            <p class="hero-subtitle">
+                AI-powered personalized learning recommendations tailored to your skills, interests, and career goals
+            </p>
+            <div class="hero-buttons">
+                <a href="index.html?mode=signup" class="btn btn-primary btn-lg">Start Learning Today</a>
+                <button class="btn btn-secondary btn-lg" onclick="scrollToSection('how-it-works')">
+                    <i class="fas fa-play-circle"></i> See How It Works
+                </button>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <h3>50+</h3>
+                    <p>Active Learners</p>
+                </div>
+                <div class="stat-item">
+                    <h3>40+</h3>
+                    <p>Learning Paths</p>
+                </div>
+                <div class="stat-item">
+                    <h3>98%</h3>
+                    <p>Success Rate</p>
+                </div>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="floating-card card-1">
+                <i class="fas fa-chart-line"></i>
+                <p>Progress Tracking</p>
+            </div>
+            <div class="floating-card card-2">
+                <i class="fas fa-brain"></i>
+                <p>AI Recommendations</p>
+            </div>
+            <div class="floating-card card-3">
+                <i class="fas fa-code"></i>
+                <p>Practice Code</p>
+            </div>
+            <svg viewBox="0 0 400 300" class="hero-svg">
+                <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <circle cx="200" cy="150" r="100" fill="url(#gradient)" opacity="0.1"></circle>
+                <circle cx="200" cy="150" r="80" fill="none" stroke="url(#gradient)" stroke-width="2" opacity="0.3"></circle>
+                <circle cx="200" cy="150" r="60" fill="none" stroke="url(#gradient)" stroke-width="2" opacity="0.5"></circle>
+            </svg>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Powerful Features</h2>
+            <p class="section-subtitle">Everything you need to accelerate your learning journey</p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-quiz"></i>
+                    </div>
+                    <h3>Skill Assessment</h3>
+                    <p>Take comprehensive quizzes to evaluate your technical knowledge across multiple domains. Get detailed insights about your strengths and areas for improvement.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>AI Recommendations</h3>
+                    <p>Our intelligent AI engine analyzes your skills and goals to recommend the perfect learning path. Get personalized suggestions that match your learning pace.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-map"></i>
+                    </div>
+                    <h3>Learning Roadmaps</h3>
+                    <p>Visualize your entire learning journey with interactive roadmaps. Follow curated paths from beginner to advanced levels with clear milestones.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <h3>Curated Resources</h3>
+                    <p>Access hand-picked learning materials including tutorials, articles, videos, and documentation tailored to your skill level.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-code-branch"></i>
+                    </div>
+                    <h3>Coding Practice</h3>
+                    <p>Practice real-world coding challenges and problems. Build your portfolio with hands-on projects and get instant feedback.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-area"></i>
+                    </div>
+                    <h3>Progress Analytics</h3>
+                    <p>Track your learning progress with detailed analytics and performance metrics. Celebrate milestones and identify growth opportunities.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">How It Works</h2>
+            <p class="section-subtitle">Get started in 4 simple steps</p>
+
+            <div class="steps-container">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Create Account</h3>
+                        <p>Sign up with your email and create a secure account. It takes less than a minute.</p>
+                    </div>
+                </div>
+
+                <div class="step-arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Take Quiz</h3>
+                        <p>Complete our comprehensive skill assessment to help us understand your current knowledge level.</p>
+                    </div>
+                </div>
+
+                <div class="step-arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Get Recommendations</h3>
+                        <p>Receive personalized learning paths powered by AI based on your quiz results and goals.</p>
+                    </div>
+                </div>
+
+                <div class="step-arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Start Learning</h3>
+                        <p>Follow your customized roadmap with resources, coding challenges, and track your progress.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section id="benefits" class="benefits">
+        <div class="container">
+            <h2 class="section-title">Why Choose Cognify?</h2>
+            <p class="section-subtitle">Join thousands of learners transforming their careers</p>
+
+            <div class="benefits-grid">
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>Accelerated Learning</h3>
+                    <p>Learn faster with AI-optimized paths designed for efficiency. Skip unnecessary content and focus on what matters.</p>
+                </div>
+
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <i class="fas fa-target"></i>
+                    </div>
+                    <h3>Goal-Oriented</h3>
+                    <p>Set your learning goals and let our AI guide you toward achieving them with structured milestones.</p>
+                </div>
+
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Community Driven</h3>
+                    <p>Learn alongside thousands of peers, share experiences, and grow together in a supportive environment.</p>
+                </div>
+
+                
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Transform Your Learning?</h2>
+                <p>Join to connect with Cognify</p>
+                <div class="cta-buttons">
+                    <a href="index.html?mode=signup" class="btn btn-primary btn-lg">Start Free Today</a>
+                  
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+
+    <script src="landing-script.js"></script>
+</body>
+</html>

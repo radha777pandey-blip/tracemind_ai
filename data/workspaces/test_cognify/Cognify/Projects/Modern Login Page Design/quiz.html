@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cognify Skill Quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="quiz-style.css" />
+  </head>
+  <body>
+    <div class="quiz-shell">
+      <header class="quiz-header">
+        <div class="brand-row">
+          <div class="brand-logo">
+            <i class="fas fa-brain"></i>
+            <span>Cognify</span>
+          </div>
+          <nav class="quiz-nav">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/">Landing</a>
+            <a href="/auth">Sign Out</a>
+          </nav>
+        </div>
+
+        <section class="quiz-hero">
+          <div>
+            <p class="eyebrow">Skill Assessment</p>
+            <h1>Find the next best skill for your growth.</h1>
+            <p class="hero-copy">
+              Complete this short quiz to help Cognify identify your strength areas and recommend the most suitable learning path.
+            </p>
+          </div>
+          <div class="hero-card">
+            <div>
+              <span>Questions</span>
+              <strong>5</strong>
+            </div>
+            <div>
+              <span>Duration</span>
+              <strong>4 min</strong>
+            </div>
+          </div>
+        </section>
+      </header>
+
+      <main class="quiz-main">
+        <section class="quiz-card">
+          <div class="quiz-topbar">
+            <div class="quiz-progress">
+              <span id="quizProgressLabel">Question 1 of 5</span>
+              <div class="progress-track">
+                <div class="progress-bar" id="quizProgressBar" style="width: 0%"></div>
+              </div>
+            </div>
+            <button id="resetQuiz" class="btn btn-tertiary">Restart</button>
+          </div>
+
+          <div class="question-panel" id="questionPanel">
+            <h2 id="questionTitle"></h2>
+            <div class="choices" id="choices"></div>
+          </div>
+
+          <div class="quiz-footer">
+            <button id="prevButton" class="btn btn-secondary">Previous</button>
+            <button id="nextButton" class="btn btn-primary">Next</button>
+          </div>
+        </section>
+
+        <section class="results-panel hidden" id="resultsPanel">
+          <div class="results-header">
+            <h2>Quiz Summary</h2>
+            <p>Great job completing the assessment.</p>
+          </div>
+          <div class="results-grid">
+            <article>
+              <span>Score</span>
+              <strong id="finalScore">0/5</strong>
+            </article>
+            <article>
+              <span>Accuracy</span>
+              <strong id="finalPercentage">0%</strong>
+            </article>
+            <article>
+              <span>Recommended Path</span>
+              <strong id="recommendedPath">Frontend Developer</strong>
+            </article>
+          </div>
+          <div class="recommendation">
+            <h3>Next Best Step</h3>
+            <p id="recommendationText">
+              Focus on refining your JavaScript and React problem solving to accelerate your path toward frontend mastery.
+            </p>
+          </div>
+          <div class="resource-summary">
+            <h3>Suggested Learning Resources</h3>
+            <ul id="recommendedResources" class="resource-list"></ul>
+          </div>
+          <div class="results-actions">
+            <a href="/dashboard" class="btn btn-primary">Back to Dashboard</a>
+            <a href="#" id="reviewAnswers" class="btn btn-secondary">Review Answers</a>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="quiz-script.js"></script>
+  </body>
+</html>
